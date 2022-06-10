@@ -268,6 +268,7 @@ public class Cafe {
                 System.out.println("MAIN MENU");
                 System.out.println("---------");
                 System.out.println("1. Goto Menu");
+		System.out.println("11. Search Menu Item");
                 System.out.println("2. Update Profile");
                 System.out.println("3. Place a Order");
                 System.out.println("4. Update a Order");
@@ -275,7 +276,8 @@ public class Cafe {
                 System.out.println("9. Log out");
                 switch (readChoice()){
                    case 1: Menu(esql); break;
-                   case 2: UpdateProfile(esql); break;
+                   case 11: MenuItemType(esql); break; 
+		   case 2: UpdateProfile(esql); break;
                    case 3: PlaceOrder(esql); break;
                    case 4: UpdateOrder(esql); break;
                    case 9: usermenu = false; break;
@@ -376,7 +378,33 @@ public class Cafe {
 
 // Rest of the functions definition go in here
 
-  public static void Menu(Cafe esql){}
+  public static void Menu(Cafe esql){
+     try{
+         String query = String.format("SELECT * FROM MENU");
+         int menuItems = esql.executeQueryAndPrintResult(query);
+      }catch(Exception e){
+         System.err.println (e.getMessage ());
+      }
+  }
+
+  public static void MenuItemType(Cafe esql){
+     try{
+	System.out.println("MENU ITEM TYPE");
+        System.out.println("---------------");
+     	System.out.println("Enter Item Type (Drinks, Sweets, or Soup) or Name: ");
+        String item = in.readLine();
+        
+        // create sql statment
+        String query = String.format("SELECT itemname FROM MENU WHERE type = '%s' OR itemname = '%s'", item, item);
+         
+	System.out.println("---------------");
+	esql.executeQueryAndPrintResult(query);
+        System.out.println("---------------");
+      }catch(Exception e){
+         System.err.println(e.getMessage());
+      }  
+  }
+
 
   public static void UpdateProfile(Cafe esql){}
 
