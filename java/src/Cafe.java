@@ -299,6 +299,9 @@ public class Cafe {
                      case 4:
                         UpdateOrder(esql, authorisedUser);
                         break;
+                     case 5:
+                        viewOrderHistory(esql, authorisedUser);
+                        break;
                      case 9:
                         usermenu = false;
                         break;
@@ -588,7 +591,7 @@ public class Cafe {
          while (!item.equals("q")) {
             item = in.readLine();
             if (item.equals("q")) {
-               return;
+               break;
             }
             query = String.format("SELECT * FROM MENU WHERE itemName = '%s'", item);
             int valid = esql.executeQuery(query);
@@ -596,7 +599,7 @@ public class Cafe {
                System.out.println("Item by that name does not exist in the menu. Please try again.");
                item = in.readLine();
                if (item.equals("q")) {
-                  return;
+                  break;
                }
                query = String.format("SELECT * FROM MENU WHERE itemName = '%s'", item);
                valid = esql.executeQuery(query);
@@ -646,36 +649,87 @@ public class Cafe {
             String managerAuth = managerAuthString.get(0).get(0);
 
             if (resultString.equals("Manager ") || resultString.equals("Employee ")) {
-               System.out.println("Enter orderID of order to update: ");
+               System.out.println("Enter login of user of order to update: ");
+               login = in.readLine();
+               query = String.format("SELECT * from ORDERS where login = '%s'", login);
+               esql.executeQueryAndPrintResult(query);
+               System.out.println("Enter orderID of order to change to paid: ");
                orderID = in.readLine();
+               query = String.format("UPDATE ORDERS set paid = '%s' where orderID = '%s'", true, orderID);
+               esql.executeUpdate(query);
+               query = String.format("UPDATE ITEMSTATUS set lastUpdated = CURRENT_TIMESTAMP where orderID = '%s'", orderID);
+               esql.executeUpdate(query);
+               System.out.println("Updated paid order status.");
+               query = String.format("SELECT * FROM ORDERS where orderID = '%s'", orderID);
+               esql.executeQueryAndPrintResult(query);
             }
             else {
+
+               query = String.format("SELECT * from ORDERS where login = '%s'", login);
+               esql.executeQueryAndPrintResult(query);
                System.out.println("Enter orderID of order to update: ");
                orderID = in.readLine();
                query = String.format("SELECT paid FROM ORDERS WHERE orderID = '%s'", orderID);
                result = esql.executeQueryAndReturnResult(query);
                String isPaid = result.get(0).get(0);
-               if (isPaid.equals("false")) {
-                  query = String.format("SELECT * FROM ORDERS WHERE orderID = '%s'", orderID);
-                  esql.executeQueryAndPrintResult(query);
-                  System.out.println("What item would you like to change?");
-                  /*
-                   * 
-                   * 
-                   * 
-                   * 
-                   * Needs implementation still
-                   */
-               }
+               if (isPaid.equals("f")) {
+                  query = String.format("SELECT * FROM ITEMSTATUS WHERE orderID = '%s'", orderID);
+                  int numOrders = esql.executeQueryAndPrintResult(query);
+
+                  System.out.println("Would you like to remove or add items to this order? (0 for remove, 1 for add): ");
+
+                  switch(readChoice()) {
+                     case 0: 
+
+                        System.out.println("Enter the name of the item you want removed from your order: ");
+                        String choice = in.readLine();
+                        query = String.format("DELETE FROM ITEMSTATUS WHERE orderid = '%s' AND itemName = '%s'", orderID, choice);
+                        esql.executeUpdate(query);
+                        query = String.format("SELECT price FROM MENU WHERE itemName = '%s'", choice);
+                        result = esql.executeQueryAndReturnResult(query);
+                        float itemPrice = Float.parseFloat(result.get(0).get(0));
+                        query = String.format("SELECT total FROM ORDERS WHERE orderID = '%s'", orderID);
+                        result = esql.executeQueryAndReturnResult(query);
+                        float totalPrice = Float.parseFloat(result.get(0).get(0));
+                        totalPrice -= itemPrice;
+                        query = String.format("UPDATE ORDERS SET total = '%s' WHERE orderID = '%s'", totalPrice, orderID);
+                        esql.executeUpdate(query);
+                        System.out.println("Removed " + choice + " from orderID " + orderID);
+                        System.out.println("New order total: $" + totalPrice);
+                        break;
+
+                     case 1:
+                     System.out.println("Would you like to remove or add items to this order? (0 for remove, 1 for add): ");
+                     System.out.println("Enter the name of the item you want to add to your order: ");
+                     String choice1 = in.readLine();
+                     //query = String.format("DELETE FROM ITEMSTATUS WHERE itemName = '%s'", choice1);
+                     //esql.executeUpdate(query);
+                     query = String.format("SELECT price FROM MENU WHERE itemName = '%s'", choice1);
+                     result = esql.executeQueryAndReturnResult(query);
+                     float itemPrice1 = Float.parseFloat(result.get(0).get(0));
+                     query = String.format("SELECT total FROM ORDERS WHERE orderID = '%s'", orderID);
+                     result = esql.executeQueryAndReturnResult(query);
+                     float totalPrice1 = Float.parseFloat(result.get(0).get(0));
+                     totalPrice1 += itemPrice1;
+                     query = String.format("UPDATE ORDERS SET total = '%s' WHERE orderID = '%s'", totalPrice1, orderID);
+                     esql.executeUpdate(query);
+                     System.out.println("Added " + choice1 + " to orderID " + orderID);
+                     System.out.println("New order total: $" + totalPrice1);
+
+                     break;
+                  }
+
+            }
+                  
+            
+               
                else {
                   query = String.format("SELECT * FROM ORDERS WHERE orderID = '%s'", orderID);
                   esql.executeQueryAndPrintResult(query);
                   System.out.println("Order has been paid, changes cannot be made at this time.");
                   return;
                }
-
-            }
-         }
+         }}         
          else {
             System.out.println("login failed. please try again");
             UpdateProfile(esql);
@@ -685,5 +739,54 @@ public class Cafe {
       System.err.println(e.getMessage());
    }
 }
+
+public static void viewOrderHistory(Cafe esql, String login) { 
+
+   try {
+      String query = null;
+         String orderID = null;
+         int orders;
+         //login = LogIn(esql);
+
+         String managerQuery = null;
+         List<List<String>> result;
+         List<List<String>> managerAuthString;
+
+         if (login != null) {
+            query = String.format("SELECT type FROM USERS WHERE login = '%s'", login);
+            result = esql.executeQueryAndReturnResult(query);
+            String resultString = result.get(0).get(0);
+
+            String managerQ = String.format("SELECT type FROM USERS WHERE login = '%s'", login);
+            managerAuthString = esql.executeQueryAndReturnResult(managerQ);
+            String managerAuth = managerAuthString.get(0).get(0);
+
+            if (resultString.equals("Manager ") || resultString.equals("Employee ")) {
+               query = String.format("SELECT * FROM ORDERS WHERE paid = '%s' AND timeStampRecieved >= NOW() - '1 day'::INTERVAL ", false);
+               orders = esql.executeQueryAndPrintResult(query);
+            }
+            else {
+               query = String.format("SELECT * FROM ORDERS WHERE login = '%s' ORDER BY timeStampRecieved DESC LIMIT 5", login);
+               orders = esql.executeQueryAndPrintResult(query);
+            }
+            if (orders == 0) {
+               System.out.println("No orders within 24 hours found.");
+            }
+         }          else {
+            System.out.println("login failed. please try again");
+            UpdateProfile(esql);
+         }
+
+
+
+   } catch (Exception e) {
+      System.err.println(e.getMessage());
+   }
+
+}
+
+
+
+
 }// end Cafe
 
