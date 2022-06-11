@@ -281,6 +281,7 @@ public class Cafe {
                   System.out.println("2. Update Profile");
                   System.out.println("3. Place a Order");
                   System.out.println("4. Update a Order");
+                  System.out.println("5. View Order History");
                   System.out.println(".........................");
                   System.out.println("9. Log out");
                   switch (readChoice()) {
@@ -407,31 +408,31 @@ public class Cafe {
 
    // Rest of the functions definition go in here
 
-   public static void Menu(Cafe esql) {
-      try {
-         String query = String.format("SELECT * FROM MENU");
-         int menuItems = esql.executeQueryAndPrintResult(query);
-      } catch (Exception e) {
-         System.err.println(e.getMessage());
-      }
+   public static void Menu(Cafe esql){
+      try{
+          String query = String.format("SELECT * FROM MENU");
+          int menuItems = esql.executeQueryAndPrintResult(query);
+       }catch(Exception e){
+          System.err.println (e.getMessage ());
+       }
    }
-
-   public static void MenuItemType(Cafe esql) {
-      try {
-         System.out.println("MENU ITEM TYPE");
+ 
+   public static void MenuItemType(Cafe esql){
+      try{
+    System.out.println("MENU ITEM TYPE");
          System.out.println("---------------");
          System.out.println("Enter Item Type (Drinks, Sweets, or Soup) or Name: ");
          String item = in.readLine();
-
+         
          // create sql statment
          String query = String.format("SELECT itemname FROM MENU WHERE type = '%s' OR itemname = '%s'", item, item);
-
+          
+    System.out.println("---------------");
+    esql.executeQueryAndPrintResult(query);
          System.out.println("---------------");
-         esql.executeQueryAndPrintResult(query);
-         System.out.println("---------------");
-      } catch (Exception e) {
-         System.err.println(e.getMessage());
-      }
+       }catch(Exception e){
+          System.err.println(e.getMessage());
+       }  
    }
 
    public static void UpdateProfile(Cafe esql) {
