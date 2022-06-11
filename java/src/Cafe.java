@@ -225,6 +225,7 @@ public class Cafe {
     * @param args the command line arguments this inclues the <mysql|pgsql> <login
     *             file>
     */
+    
    public static void main(String[] args) {
       if (args.length != 3) {
          System.err.println(
@@ -245,6 +246,7 @@ public class Cafe {
          String dbname = args[0];
          String dbport = args[1];
          String user = args[2];
+         String authorisedUser = null;
          esql = new Cafe(dbname, dbport, user, "");
 
          boolean keepon = true;
@@ -255,7 +257,6 @@ public class Cafe {
             System.out.println("1. Create user");
             System.out.println("2. Log in");
             System.out.println("9. < EXIT");
-            String authorisedUser = null;
             switch (readChoice()) {
                case 1:
                   CreateUser(esql);
@@ -293,10 +294,10 @@ public class Cafe {
                         UpdateProfile(esql);
                         break;
                      case 3:
-                        PlaceOrder(esql);
+                        PlaceOrder(esql, authorisedUser);
                         break;
                      case 4:
-                        UpdateOrder(esql);
+                        UpdateOrder(esql, authorisedUser);
                         break;
                      case 9:
                         usermenu = false;
@@ -448,7 +449,7 @@ public class Cafe {
             managerAuthString = esql.executeQueryAndReturnResult(managerQ);
             String managerAuth = managerAuthString.get(0).get(0);
 
-            if (resultString.equals(managerAuth)) {
+            if (resultString.equals("Manager ")) {
                System.out.println("Enter login of user to modify: ");
                String userLogin = in.readLine();
                managerQuery = String.format("SELECT * FROM USERS WHERE login = '%s'", userLogin);
@@ -558,10 +559,131 @@ public class Cafe {
 
    }
 
-   public static void PlaceOrder(Cafe esql) {
+   public static void PlaceOrder(Cafe esql, String login) {
+      try {
+         String query = null;
+         List<List<String>> result;
+         String orderID;
+         float price = 0.0f;
+
+         Menu(esql);
+
+         String item = "";
+         System.out.println("What would you like to order? (Enter 'q' to complete order)");
+
+         //query = String.format(        "ALTER TABLE ORDERS AUTO_INCREMENT=2"      );
+         //2esql.executeUpdate(query);
+
+         //orderID = result.get(0).get(0);
+         //int ID = Integer.parseInt(orderID);
+         //ID++;
+
+         query = String.format("INSERT INTO ORDERS VALUES (DEFAULT,'%s','%s', CURRENT_TIMESTAMP,'%s' )", login, false, 666.666);
+         esql.executeUpdate(query);
+
+         query = String.format("SELECT orderID FROM ORDERS WHERE total = '%s'",666.666);
+         result = esql.executeQueryAndReturnResult(query);
+         orderID = result.get(0).get(0);
+
+         while (!item.equals("q")) {
+            item = in.readLine();
+            if (item.equals("q")) {
+               return;
+            }
+            query = String.format("SELECT * FROM MENU WHERE itemName = '%s'", item);
+            int valid = esql.executeQuery(query);
+            while (valid == 0) {
+               System.out.println("Item by that name does not exist in the menu. Please try again.");
+               item = in.readLine();
+               if (item.equals("q")) {
+                  return;
+               }
+               query = String.format("SELECT * FROM MENU WHERE itemName = '%s'", item);
+               valid = esql.executeQuery(query);
+            }
+
+            query = String.format("INSERT INTO ITEMSTATUS VALUES ('%s', '%s', CURRENT_TIMESTAMP, '%s')", orderID, item, "Started");
+            esql.executeUpdate(query);
+
+            query = String.format("SELECT price FROM MENU WHERE itemName = '%s'", item);
+            result = esql.executeQueryAndReturnResult(query);
+
+            price += Float.parseFloat(result.get(0).get(0));
+
+            
+         }
+
+         query = String.format("UPDATE ORDERS SET total = '%s' WHERE orderID = '%s'", price, orderID);
+         esql.executeUpdate(query);
+         System.out.println("Order has been placed with orderID: " + orderID);
+         query = String.format("SELECT * FROM ORDERS WHERE orderID = '%s'",orderID);
+         esql.executeQueryAndPrintResult(query);
+            
+
+      } catch (Exception e) {
+         System.err.println(e.getMessage());
+      }
    }
 
-   public static void UpdateOrder(Cafe esql) {
-   }
+   public static void UpdateOrder(Cafe esql, String login) {
+      try {
+         //String login = null;
+         String query = null;
+         String orderID = null;
+         //login = LogIn(esql);
 
+         String managerQuery = null;
+         List<List<String>> result;
+         List<List<String>> managerAuthString;
+
+         if (login != null) {
+            query = String.format("SELECT type FROM USERS WHERE login = '%s'", login);
+            result = esql.executeQueryAndReturnResult(query);
+            String resultString = result.get(0).get(0);
+
+            String managerQ = String.format("SELECT type FROM USERS WHERE login = '%s'", login);
+            managerAuthString = esql.executeQueryAndReturnResult(managerQ);
+            String managerAuth = managerAuthString.get(0).get(0);
+
+            if (resultString.equals("Manager ") || resultString.equals("Employee ")) {
+               System.out.println("Enter orderID of order to update: ");
+               orderID = in.readLine();
+            }
+            else {
+               System.out.println("Enter orderID of order to update: ");
+               orderID = in.readLine();
+               query = String.format("SELECT paid FROM ORDERS WHERE orderID = '%s'", orderID);
+               result = esql.executeQueryAndReturnResult(query);
+               String isPaid = result.get(0).get(0);
+               if (isPaid.equals("false")) {
+                  query = String.format("SELECT * FROM ORDERS WHERE orderID = '%s'", orderID);
+                  esql.executeQueryAndPrintResult(query);
+                  System.out.println("What item would you like to change?");
+                  /*
+                   * 
+                   * 
+                   * 
+                   * 
+                   * Needs implementation still
+                   */
+               }
+               else {
+                  query = String.format("SELECT * FROM ORDERS WHERE orderID = '%s'", orderID);
+                  esql.executeQueryAndPrintResult(query);
+                  System.out.println("Order has been paid, changes cannot be made at this time.");
+                  return;
+               }
+
+            }
+         }
+         else {
+            System.out.println("login failed. please try again");
+            UpdateProfile(esql);
+         }
+      
+   } catch (Exception e) {
+      System.err.println(e.getMessage());
+   }
+}
 }// end Cafe
+
